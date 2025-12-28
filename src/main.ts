@@ -33,7 +33,7 @@ const getJournalEntries = new GetJournalEntries(journalEntryRepository);
 const deleteJournalEntry = new DeleteJournalEntry(journalEntryRepository);
 const updateJournalEntry = new UpdateJournalEntry(journalEntryRepository);
 
-const appRouter = router({
+export const appRouter = router({
   hello: publicProcedure.query(() => {
     return 'Hello, world!';
   }),
@@ -94,6 +94,10 @@ app.use(
 
 const port = process.env.PORT || 4000;
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+// Only start the HTTP server if this file is run directly (prevents double-listen during tests where
+// this module is imported)
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}

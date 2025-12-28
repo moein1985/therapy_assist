@@ -17,7 +17,14 @@ export class PrismaChatMessageRepository implements ChatMessageRepository {
         createdAt: chatMessage.createdAt,
       },
     });
-    return createdChatMessage;
+    // map to domain ChatMessage with proper sender union type
+    return {
+      id: createdChatMessage.id,
+      userId: createdChatMessage.userId,
+      text: createdChatMessage.text,
+      sender: createdChatMessage.sender as 'USER' | 'AI',
+      createdAt: createdChatMessage.createdAt,
+    };
   }
 
   async findByUserId(userId: string): Promise<ChatMessage[]> {
@@ -25,6 +32,12 @@ export class PrismaChatMessageRepository implements ChatMessageRepository {
       where: { userId },
       orderBy: { createdAt: 'asc' },
     });
-    return chatMessages;
+    return chatMessages.map((m) => ({
+      id: m.id,
+      userId: m.userId,
+      text: m.text,
+      sender: m.sender as 'USER' | 'AI',
+      createdAt: m.createdAt,
+    }));
   }
 }

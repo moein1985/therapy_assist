@@ -5,16 +5,17 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in the .env file');
-}
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model: GenerativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
+// Do not throw during import; check for API key at call time so tests can skip AI if key is not set.
 export async function generateText(prompt: string): Promise<string> {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not set in the .env file');
+  }
+
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  const model: GenerativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
   try {
     const result = await model.generateContent(prompt);
     const response = result.response;

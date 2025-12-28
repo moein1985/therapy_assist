@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { publicProcedure, router } from './trpc';
 import { ChatWithAI } from '../../application/use-cases/ChatWithAI';
 import { PrismaChatMessageRepository } from '../../infrastructure/repositories/PrismaChatMessageRepository';
-import { prisma } from '../../infrastructure/database/prisma';
+import prisma from '../../infrastructure/database/prisma';
 
 // Initialize repository and use case
 const chatMessageRepository = new PrismaChatMessageRepository(prisma);
