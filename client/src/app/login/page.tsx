@@ -1,14 +1,14 @@
 'use client';
 
 import React from 'react';
-import { trpc } from '../../src/utils/trpc';
+import { trpc } from '@/utils/trpc';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 
 export default function LoginPage() {
   const router = useRouter();
   const mutation = trpc.login.useMutation({
-    onSuccess(data) {
+    onSuccess: (data: { token: string }) => {
       localStorage.setItem('token', data.token);
       router.push('/dashboard');
     },

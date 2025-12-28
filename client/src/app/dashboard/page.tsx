@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { trpc } from '../../src/utils/trpc';
+import { trpc } from '@/utils/trpc';
+import type { MoodLog } from '@backend/domain/entities/MoodLog';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function DashboardPage() {
         ) : (
           <ul className="space-y-3">
             {data && data.length > 0 ? (
-              data.map((m) => (
+              data.map((m: MoodLog) => (
                 <li key={m.id} className="bg-white p-4 rounded shadow">
                   <div className="text-lg font-medium">{m.mood}</div>
                   <div className="text-sm text-gray-500">{new Date(m.createdAt).toLocaleString()}</div>
