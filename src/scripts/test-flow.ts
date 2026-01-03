@@ -43,18 +43,36 @@ async function run() {
     const authCtx = { req: {} as any, res: {} as any, user: { id: decoded.id } };
     const authCaller = appRouter.createCaller(authCtx as any);
 
-    // 5) Log Mood
+    // 5) Ensure an ACTIVE conversation exists for this user
+    console.log('Ensuring active conversation...');
+    let conversation = await prisma.conversation.findFirst({ where: { userId: decoded.id, status: 'ACTIVE' } });
+    if (!conversation) {
+      conversation = await prisma.conversation.create({ data: { userId: decoded.id, status: 'ACTIVE' } });
+      console.log('Created conversation:', conversation.id);
+    } else {
+      console.log('Found conversation:', conversation.id);
+    }
+
+    // 6) Log Mood
     console.log('Logging mood...');
     const mood = await authCaller.logMood({ mood: 'Anxious' });
     console.log('Logged mood id:', mood.id);
 
-    // 6) AI Chat (only if AVALAI_API_KEY is set)
+    // 7) AI Chat (only if AVALAI_API_KEY is set)
     if (!process.env.AVALAI_API_KEY) {
       console.warn('AVALAI_API_KEY not set, skipping AI chat step.');
     } else {
       console.log('Sending chat message to AI...');
       const aiResponse = await authCaller.chat.sendMessage({ message: 'I feel anxious about my job' });
       console.log('AI Response:', aiResponse);
+
+      // Verify token log
+      const tokenLog = await prisma.tokenLog.findFirst({ where: { userId: decoded.id }, orderBy: { createdAt: 'desc' } });
+      if (!tokenLog) {
+        console.warn('No token log found for this user.');
+      } else {
+        console.log('Token usage logged:', { promptTokens: tokenLog.promptTokens, completionTokens: tokenLog.completionTokens });
+      }
     }
 
     console.log('Smoke test completed successfully.');

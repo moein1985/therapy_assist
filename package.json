@@ -8,6 +8,7 @@
     "start:prod": "node dist/main.js",
     "build:ts": "tsc",
     "test:flow": "ts-node src/scripts/test-flow.ts",
+    "seed": "ts-node src/scripts/seed.ts",
     "test:e2e": "playwright test --headed",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
