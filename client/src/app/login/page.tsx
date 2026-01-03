@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
+      <div className="w-full max-w-md bg-white rounded-lg shadow p-6" style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #e5e7eb' }}>
         <h1 className="text-2xl font-semibold mb-2">ورود</h1>
         <p className="text-sm text-gray-500 mb-3">برای ورود سریع از حساب دموی زیر استفاده کنید: <strong>test@example.com / password123</strong></p>
         <div className="flex justify-end mb-4">
