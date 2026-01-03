@@ -81,12 +81,11 @@ export default function LoginPage() {
         </button>
 
         {mutation.isError && (
-          <div className="mt-3 text-red-600 text-sm">خطا: {(mutation.error as any).message}</div>
+          <div className="mt-3 text-red-600 text-sm">خطا: {(mutation.error as any)?.message || 'خطا در ورود'}</div>
         )}
 
-        {rawError && (
-          <pre className="mt-3 bg-gray-100 p-3 text-xs rounded overflow-auto">{rawError}</pre>
-        )}
+        {/* Remove verbose raw error dump for readability */}
+
       </div>
     </div>
   );

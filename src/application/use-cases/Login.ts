@@ -12,15 +12,21 @@ export class Login {
       throw new Error('Password is required');
     }
 
+    console.log('Login attempt for', email);
     const user = await this.userRepository.getUserByEmail(email);
 
     if (!user) {
+      console.log('Login failed: user not found for', email);
       throw new Error('Invalid email or password');
     }
 
+    console.log('User found, comparing password for', email);
     const isPasswordValid = await bcrypt.compare(password, user.password!);
 
+    console.log('Password valid?', isPasswordValid);
+
     if (!isPasswordValid) {
+      console.log('Login failed: invalid password for', email);
       throw new Error('Invalid email or password');
     }
 
