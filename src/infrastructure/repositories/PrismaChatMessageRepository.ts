@@ -1,6 +1,7 @@
 // src/infrastructure/repositories/PrismaChatMessageRepository.ts
 
 import { PrismaClient } from '@prisma/client';
+import type { ChatMessage as PrismaChatMessage } from '@prisma/client';
 import { ChatMessage } from '../../domain/entities/ChatMessage';
 import { ChatMessageRepository } from '../../domain/repositories/ChatMessageRepository';
 
@@ -32,7 +33,7 @@ export class PrismaChatMessageRepository implements ChatMessageRepository {
       where: { userId },
       orderBy: { createdAt: 'asc' },
     });
-    return chatMessages.map((m) => ({
+    return chatMessages.map((m: PrismaChatMessage) => ({
       id: m.id,
       userId: m.userId,
       text: m.text,
