@@ -96,7 +96,8 @@ PORT=4000
 JWT_SECRET="your-jwt-secret"
 
 # Gemini API Key (set to enable AI chat in smoke tests)
-GEMINI_API_KEY=""
+AVALAI_API_KEY="aa-9SKXcAXZRCJ5MmyvgcBrxKHSV6m5m7WeHnEXiCSX69ZzK4Ls"
+AI_MODEL_NAME="gemini-2.5-pro"
 ```
 
 ---
@@ -196,7 +197,8 @@ services:
       - "4000:4000"
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/postgres"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      AVALAI_API_KEY: "${AVALAI_API_KEY:-}"
+      AI_MODEL_NAME: "${AI_MODEL_NAME:-gemini-2.5-pro}"
       JWT_SECRET: "${JWT_SECRET:-changeme}"
     command: sh -c "npx prisma migrate deploy && npm run start:prod"
 
@@ -505,13 +507,15 @@ dotenv.config();
 
 // Do not throw during import; check for API key at call time so tests can skip AI if key is not set.
 export async function generateText(prompt: string): Promise<string> {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const AVALAI_API_KEY = process.env.AVALAI_API_KEY;
+  const AI_MODEL_NAME = process.env.AI_MODEL_NAME || 'gemini-2.5-pro';
 
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not set in the .env file');
+  if (!AVALAI_API_KEY) {
+    throw new Error('AVALAI_API_KEY is not set in the .env file');
   }
 
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  // Use native fetch to call AvalAI endpoint `https://api.avalai.ir/v1/chat/completions` with model and messages
+
   const model: GenerativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
   try {
@@ -1021,9 +1025,9 @@ async function run() {
     const mood = await authCaller.logMood({ mood: 'Anxious' });
     console.log('Logged mood id:', mood.id);
 
-    // 6) AI Chat (only if GEMINI_API_KEY is set)
-    if (!process.env.GEMINI_API_KEY) {
-      console.warn('GEMINI_API_KEY not set, skipping AI chat step.');
+    // 6) AI Chat (only if AVALAI_API_KEY is set)
+    if (!process.env.AVALAI_API_KEY) {
+      console.warn('AVALAI_API_KEY not set, skipping AI chat step.');
     } else {
       console.log('Sending chat message to AI...');
       const aiResponse = await authCaller.chat.sendMessage({ message: 'I feel anxious about my job' });
@@ -1048,7 +1052,7 @@ run();
 ## Smoke test result
 
 - The smoke test was executed locally using `npm run test:flow`.
-- Result: user was registered, login succeeded, mood logged. The AI step was skipped because `GEMINI_API_KEY` was not set.
+- Result: user was registered, login succeeded, mood logged. The AI step was skipped because `AVALAI_API_KEY` was not set.
 
 # End of file
 

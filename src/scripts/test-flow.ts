@@ -48,9 +48,9 @@ async function run() {
     const mood = await authCaller.logMood({ mood: 'Anxious' });
     console.log('Logged mood id:', mood.id);
 
-    // 6) AI Chat (only if GEMINI_API_KEY is set)
-    if (!process.env.GEMINI_API_KEY) {
-      console.warn('GEMINI_API_KEY not set, skipping AI chat step.');
+    // 6) AI Chat (only if AVALAI_API_KEY is set)
+    if (!process.env.AVALAI_API_KEY) {
+      console.warn('AVALAI_API_KEY not set, skipping AI chat step.');
     } else {
       console.log('Sending chat message to AI...');
       const aiResponse = await authCaller.chat.sendMessage({ message: 'I feel anxious about my job' });

@@ -1,27 +1,45 @@
 // src/infrastructure/gemini.ts
 
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Do not throw during import; check for API key at call time so tests can skip AI if key is not set.
+// Use native fetch to call AvalAI (https://docs.avalai.ir/fa/quickstart)
 export async function generateText(prompt: string): Promise<string> {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.AVALAI_API_KEY;
+  const model = process.env.AI_MODEL_NAME || 'gemini-2.5-pro';
 
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not set in the .env file');
+  if (!apiKey) {
+    throw new Error('AVALAI_API_KEY is not set in the environment');
   }
 
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model: GenerativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const url = 'https://api.avalai.ir/v1/chat/completions';
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    return response.text();
-  } catch (error) {
-    console.error('Error generating text from Gemini AI:', error);
-    throw new Error('Failed to generate text from AI.');
+  const body = JSON.stringify({
+    model,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`AvalAI request failed: ${res.status} ${res.statusText} ${txt}`);
   }
+
+  const data: any = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error('Invalid response from AvalAI: missing choices[0].message.content');
+  }
+
+  return content;
 }

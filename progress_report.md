@@ -2,7 +2,7 @@ Here's a progress update:
 
 **Completed:**
 *   Added `@google/generative-ai` dependency to `package.json`.
-*   Added `GEMINI_API_KEY` to the `.env` file.
+*   Switched from Gemini SDK to AvalAI (native fetch). Added `AVALAI_API_KEY` and `AI_MODEL_NAME` to `.env`.
 *   Updated `prisma/schema.prisma` with the new `ChatMessage` model.
 
 **In Progress:**

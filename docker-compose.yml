@@ -30,7 +30,8 @@ services:
       - "4000:4000"
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/postgres"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      AVALAI_API_KEY: "${AVALAI_API_KEY:-}"
+      AI_MODEL_NAME: "${AI_MODEL_NAME:-gemini-2.5-pro}"
       JWT_SECRET: "${JWT_SECRET:-changeme}"
     command: sh -c "npx prisma migrate deploy && npm run start:prod"
 
