@@ -9,7 +9,7 @@ Here's a progress update:
 *   Creating the `ChatMessage` domain entity.
 
 **Next Steps (User Action Required):**
-*   Please run `npm install` to install the new dependencies.
-*   Please run `npx prisma migrate dev` to update your database schema with the `ChatMessage` model.
+*   No new packages are required; the integration uses native Node fetch (Node 20+).
+*   Please run `npx prisma migrate dev` to update your database schema with the `ChatMessage` model (if not already applied).
 
 I will continue with the remaining tasks once these prerequisite actions are addressed.
