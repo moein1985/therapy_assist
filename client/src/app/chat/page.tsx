@@ -58,7 +58,7 @@ export default function ChatPage() {
           setMessages((m) => [...m, aiResponse]);
           utils.chat.getHistory.invalidate();
         },
-        onError: (err) => {
+        onError: (err: any) => {
           setIsTyping(false);
           // remove optimistic message on error
           setMessages((m) => m.filter((msg) => msg.id !== tempMessage.id));

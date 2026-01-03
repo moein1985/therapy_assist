@@ -34,7 +34,7 @@ export default function LoginPage() {
     },
   });
 
-  const { register, handleSubmit, formState } = useForm<LoginInput>({
+  const { register, handleSubmit, formState, setValue } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -43,10 +43,30 @@ export default function LoginPage() {
     mutation.mutate(data);
   };
 
+  const translateError = (msg?: string) => {
+    if (!msg) return 'خطا در ورود';
+    if (msg.includes('Invalid email or password')) return 'ایمیل یا رمز عبور نامعتبر است';
+    return msg;
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-semibold mb-4">ورود</h1>
+        <h1 className="text-2xl font-semibold mb-2">ورود</h1>
+        <p className="text-sm text-gray-500 mb-3">برای ورود سریع از حساب دموی زیر استفاده کنید: <strong>test@example.com / password123</strong></p>
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={() => {
+              setValue('email', 'test@example.com');
+              setValue('password', 'password123');
+              handleSubmit(onSubmit)();
+            }}
+            className="text-sm px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            ورود دمو
+          </button>
+        </div>
 
         <label className="block mb-2 text-sm">ایمیل</label>
         <input
@@ -81,7 +101,7 @@ export default function LoginPage() {
         </button>
 
         {mutation.isError && (
-          <div className="mt-3 text-red-600 text-sm">خطا: {(mutation.error as any)?.message || 'خطا در ورود'}</div>
+          <div className="mt-3 text-red-600 text-sm">خطا: {translateError((mutation.error as any)?.message)}</div>
         )}
 
         {/* Remove verbose raw error dump for readability */}
