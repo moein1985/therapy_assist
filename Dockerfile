@@ -1,8 +1,11 @@
 # Multi-stage Dockerfile for therapy_assist
 
 # --- Builder stage ---
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
+
+# Install system deps needed for Prisma on Debian-based images
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 
 # Install build dependencies
 COPY package.json package-lock.json* ./
@@ -17,9 +20,12 @@ COPY . .
 RUN npm run build:ts
 
 # --- Runner stage ---
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+# Install runtime deps needed for Prisma
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 
 # Install production dependencies only
 COPY package.json package-lock.json* ./

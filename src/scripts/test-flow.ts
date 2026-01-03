@@ -9,8 +9,14 @@ async function run() {
   try {
     console.log('Starting smoke test...');
 
-    // Clean up any previous test user
-    await prisma.user.deleteMany({ where: { email: 'test@example.com' } });
+    // Clean up any previous test user and their dependent records
+    const existing = await prisma.user.findUnique({ where: { email: 'test@example.com' } });
+    if (existing) {
+      await prisma.chatMessage.deleteMany({ where: { userId: existing.id } });
+      await prisma.journalEntry.deleteMany({ where: { userId: existing.id } });
+      await prisma.moodLog.deleteMany({ where: { userId: existing.id } });
+      await prisma.user.delete({ where: { id: existing.id } });
+    }
 
     // 1) Unauthenticated context
     const unauthCtx = { req: {} as any, res: {} as any, user: null };
