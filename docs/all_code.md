@@ -347,12 +347,16 @@ const appRouter = router({
     .mutation(async ({ input, ctx }) => {
       return await updateJournalEntry.execute({ ...input, userId: ctx.user.id });
     }),
+  // Return current authenticated user
+  me: protectedProcedure.query(({ ctx }) => {
+    return ctx.user;
+  }),
 });
 
 export type AppRouter = typeof appRouter;
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: ['http://localhost:3000'], credentials: true }));
 
 app.use(
   '/trpc',
@@ -455,13 +459,20 @@ const chatMessageRepository = new PrismaChatMessageRepository(prisma);
 const chatWithAI = new ChatWithAI(chatMessageRepository);
 
 export const chatRouter = router({
-  sendMessage: publicProcedure
+  // Get chat history for authenticated user
+  getHistory: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
+    return await chatMessageRepository.findByUserId(userId);
+  }),
+
+  // Send a message as authenticated user
+  sendMessage: protectedProcedure
     .input(z.object({
-      userId: z.string(),
       message: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      const aiResponse = await chatWithAI.execute(input.userId, input.message);
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const aiResponse = await chatWithAI.execute(userId, input.message);
       return aiResponse;
     }),
 });
@@ -1015,7 +1026,7 @@ async function run() {
       console.warn('GEMINI_API_KEY not set, skipping AI chat step.');
     } else {
       console.log('Sending chat message to AI...');
-      const aiResponse = await authCaller.chat.sendMessage({ userId: decoded.id, message: 'I feel anxious about my job' });
+      const aiResponse = await authCaller.chat.sendMessage({ message: 'I feel anxious about my job' });
       console.log('AI Response:', aiResponse);
     }
 

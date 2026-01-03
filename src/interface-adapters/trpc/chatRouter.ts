@@ -1,7 +1,7 @@
 // src/interface-adapters/trpc/chatRouter.ts
 
 import { z } from 'zod';
-import { publicProcedure, router } from './trpc';
+import { publicProcedure, protectedProcedure, router } from './trpc';
 import { ChatWithAI } from '../../application/use-cases/ChatWithAI';
 import { PrismaChatMessageRepository } from '../../infrastructure/repositories/PrismaChatMessageRepository';
 import prisma from '../../infrastructure/database/prisma';
@@ -11,13 +11,20 @@ const chatMessageRepository = new PrismaChatMessageRepository(prisma);
 const chatWithAI = new ChatWithAI(chatMessageRepository);
 
 export const chatRouter = router({
-  sendMessage: publicProcedure
+  // Get chat history for authenticated user
+  getHistory: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.user.id;
+    return await chatMessageRepository.findByUserId(userId);
+  }),
+
+  // Send a message as authenticated user
+  sendMessage: protectedProcedure
     .input(z.object({
-      userId: z.string(),
       message: z.string(),
     }))
-    .mutation(async ({ input }) => {
-      const aiResponse = await chatWithAI.execute(input.userId, input.message);
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user.id;
+      const aiResponse = await chatWithAI.execute(userId, input.message);
       return aiResponse;
     }),
 });

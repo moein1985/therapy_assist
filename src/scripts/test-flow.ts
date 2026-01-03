@@ -53,7 +53,7 @@ async function run() {
       console.warn('GEMINI_API_KEY not set, skipping AI chat step.');
     } else {
       console.log('Sending chat message to AI...');
-      const aiResponse = await authCaller.chat.sendMessage({ userId: decoded.id, message: 'I feel anxious about my job' });
+      const aiResponse = await authCaller.chat.sendMessage({ message: 'I feel anxious about my job' });
       console.log('AI Response:', aiResponse);
     }
 

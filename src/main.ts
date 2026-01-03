@@ -77,12 +77,19 @@ export const appRouter = router({
     .mutation(async ({ input, ctx }) => {
       return await updateJournalEntry.execute({ ...input, userId: ctx.user.id });
     }),
+  // Return current authenticated user (id from token)
+  me: protectedProcedure.query(({ ctx }) => {
+    return ctx.user;
+  }),
 });
 
 export type AppRouter = typeof appRouter;
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000'],
+  credentials: true,
+}));
 
 app.use(
   '/trpc',
