@@ -38,6 +38,23 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement | null>(null);
 
+  // Debug toggle persisted in localStorage
+  const [debugMode, setDebugMode] = React.useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      return localStorage.getItem('chat_debug') === '1';
+    } catch (e) {
+      return false;
+    }
+  });
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('chat_debug', debugMode ? '1' : '0');
+    } catch (e) {
+      // ignore
+    }
+  }, [debugMode]);
+
   React.useEffect(() => {
     if (history) {
       // safe cast from backend
@@ -86,19 +103,40 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header: session active with green dot */}
+      {/* Header: session active with green badge and debug toggle */}
       <header className="px-4 py-3 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded bg-teal-50">
             <MessageSquare className="w-6 h-6 text-teal-700" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold">Session Active</span>
-              <span className="h-3 w-3 rounded-full bg-green-500 inline-block" aria-hidden />
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-sm font-medium">
+                <span className="h-2 w-2 rounded-full bg-green-500 inline-block" aria-hidden />
+                <span>Session Active</span>
+              </div>
+              <div className="text-sm text-gray-500">Therapy session — your AI assistant is ready</div>
             </div>
-            <div className="text-sm text-gray-500">Therapy session — your AI assistant is ready</div>
           </div>
+        </div>
+
+        {/* Debug / Dev Mode toggle */}
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-gray-500">Debug</div>
+          <button
+            aria-pressed={debugMode}
+            onClick={() => setDebugMode((s) => !s)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              debugMode ? 'bg-green-500' : 'bg-gray-300'
+            }`}
+            title="Toggle Dev Mode - show token usage"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                debugMode ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
       </header>
 
@@ -127,8 +165,8 @@ export default function ChatPage() {
 
                   <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</div>
 
-                  {/* token usage footer for AI messages */}
-                  {isAI && tokenInfo && (
+                  {/* token usage footer for AI messages (only visible in Dev mode) */}
+                  {isAI && tokenInfo && debugMode && (
                     <div className="mt-2 text-xs text-gray-500 opacity-80 text-left">
                       ⚡ {tokenInfo.total} tokens (Prompt: {tokenInfo.prompt}, Completion: {tokenInfo.completion})
                     </div>

@@ -5,9 +5,6 @@ import { PrismaClient, SenderType, Conversation, ChatMessage } from '@prisma/cli
 export class PrismaChatMessageRepository {
   constructor(private prisma: PrismaClient) {}
 
-export class PrismaChatMessageRepository {
-  constructor(private prisma: PrismaClient) {}
-
   // Find or Create Active Conversation
   async findOrCreateActiveConversation(userId: string): Promise<Conversation> {
     let conversation = await this.prisma.conversation.findFirst({

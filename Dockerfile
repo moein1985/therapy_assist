@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 # Install build dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+# Use npm install instead of npm ci to tolerate lockfile drift in CI environments
+RUN npm install --no-audit --no-fund
 
 # Copy prisma schema and generate client early
 COPY prisma ./prisma
@@ -29,7 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 
 # Install production dependencies only
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+# Use npm install here as well to tolerate lockfile drift; omit dev dependencies
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy necessary prisma runtime artifacts & cli from builder so migrations can run at container start
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma

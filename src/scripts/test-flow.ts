@@ -12,7 +12,8 @@ async function run() {
     // Clean up any previous test user and their dependent records
     const existing = await prisma.user.findUnique({ where: { email: 'test@example.com' } });
     if (existing) {
-      await prisma.chatMessage.deleteMany({ where: { userId: existing.id } });
+      // ChatMessages are now linked to conversations, delete via relation
+      await prisma.chatMessage.deleteMany({ where: { conversation: { userId: existing.id } } });
       await prisma.journalEntry.deleteMany({ where: { userId: existing.id } });
       await prisma.moodLog.deleteMany({ where: { userId: existing.id } });
       await prisma.user.delete({ where: { id: existing.id } });
