@@ -4,13 +4,29 @@ import React from 'react';
 import { trpc } from '@/utils/trpc';
 import { MessageSquare } from 'lucide-react';
 
+type TokenUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  [k: string]: any;
+};
+
 type ChatMessage = {
   id: string;
-  userId: string;
+  conversationId?: string;
+  userId?: string | null;
   text: string;
-  sender: 'USER' | 'AI';
+  sender: string; // will be 'USER' | 'AI' | 'SYSTEM' (Backend SenderType)
+  tokenUsage?: TokenUsage | null;
   createdAt: string | Date;
 };
+
+function formatTokenUsage(tokenUsage?: TokenUsage) {
+  if (!tokenUsage) return null;
+  const p = (tokenUsage.prompt_tokens ?? (tokenUsage.promptTokens as any) ?? 0) as number;
+  const c = (tokenUsage.completion_tokens ?? (tokenUsage.completionTokens as any) ?? 0) as number;
+  const total = p + c;
+  return { total, prompt: p, completion: c };
+}
 
 export default function ChatPage() {
   const utils = trpc.useContext();
@@ -24,7 +40,8 @@ export default function ChatPage() {
 
   React.useEffect(() => {
     if (history) {
-      setMessages(history as ChatMessage[]);
+      // safe cast from backend
+      setMessages((history as any) as ChatMessage[]);
     }
   }, [history]);
 
@@ -34,12 +51,11 @@ export default function ChatPage() {
 
   const send = async () => {
     if (!input.trim()) return;
-    const text = input;
+    const text = input.trim();
     setInput('');
 
     const tempMessage: ChatMessage = {
       id: 'tmp-' + Date.now(),
-      userId: 'me',
       text,
       sender: 'USER',
       createdAt: new Date().toISOString(),
@@ -54,7 +70,7 @@ export default function ChatPage() {
       {
         onSuccess: (aiResponse: ChatMessage) => {
           setIsTyping(false);
-          // replace optimistic or just append AI response
+          // append AI response
           setMessages((m) => [...m, aiResponse]);
           utils.chat.getHistory.invalidate();
         },
@@ -70,32 +86,65 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="px-4 py-3 bg-white shadow flex items-center gap-3">
-        <div className="p-2 rounded bg-blue-50">
-          <MessageSquare className="w-6 h-6 text-blue-600" />
+      {/* Header: session active with green dot */}
+      <header className="px-4 py-3 bg-white/80 backdrop-blur-sm border-b flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded bg-teal-50">
+            <MessageSquare className="w-6 h-6 text-teal-700" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold">Session Active</span>
+              <span className="h-3 w-3 rounded-full bg-green-500 inline-block" aria-hidden />
+            </div>
+            <div className="text-sm text-gray-500">Therapy session — your AI assistant is ready</div>
+          </div>
         </div>
-        <h1 className="text-lg font-semibold">AI Therapist</h1>
       </header>
 
       <main className="flex-1 overflow-auto p-4 bg-gray-50">
         <div className="max-w-3xl mx-auto space-y-4">
           {isLoading && <div className="text-center text-gray-500">بارگذاری...</div>}
-          {messages.map((m) => (
-            <div key={m.id} className={m.sender === 'USER' ? 'flex justify-end' : 'flex justify-start'}>
-              <div
-                className={`max-w-[70%] px-4 py-2 rounded-lg shadow ${
-                  m.sender === 'USER' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-200 text-gray-900 rounded-bl-none'
-                }`}
-              >
-                <div className="whitespace-pre-wrap">{m.text}</div>
-                <div className="text-xs text-gray-400 mt-1 text-right">{new Date(m.createdAt).toLocaleTimeString()}</div>
+
+          {messages.map((m) => {
+            const isUser = (m.sender as string) === 'USER';
+            const isAI = (m.sender as string) === 'AI';
+            const tokenInfo = formatTokenUsage(m.tokenUsage ?? undefined);
+
+            return (
+              <div key={m.id} className={isUser ? 'flex justify-end' : 'flex justify-start'}>
+                <div
+                  className={`max-w-[72%] px-4 py-3 rounded-lg shadow ${
+                    isUser
+                      ? 'bg-blue-600 text-white rounded-br-none'
+                      : 'bg-teal-50 text-teal-900 rounded-bl-none border border-teal-100'
+                  }`}
+                >
+                  {/* Persona for AI */}
+                  {!isUser && (
+                    <div className="text-xs text-teal-700 font-medium mb-1">Therapist • AI</div>
+                  )}
+
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</div>
+
+                  {/* token usage footer for AI messages */}
+                  {isAI && tokenInfo && (
+                    <div className="mt-2 text-xs text-gray-500 opacity-80 text-left">
+                      ⚡ {tokenInfo.total} tokens (Prompt: {tokenInfo.prompt}, Completion: {tokenInfo.completion})
+                    </div>
+                  )}
+
+                  <div className={`text-xs mt-2 ${isUser ? 'text-gray-200 text-right' : 'text-gray-500 text-left'}`}>
+                    {new Date(m.createdAt).toLocaleTimeString()}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow animate-pulse">Typing...</div>
+              <div className="bg-teal-100 text-teal-700 px-4 py-2 rounded-lg shadow animate-pulse">Therapist is typing...</div>
             </div>
           )}
 
@@ -105,7 +154,7 @@ export default function ChatPage() {
 
       <div className="bg-white p-4 border-t">
         <div className="max-w-3xl mx-auto flex gap-2">
-          <input
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -114,15 +163,17 @@ export default function ChatPage() {
                 send();
               }
             }}
-            placeholder="Write a message..."
-            className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring"
+            placeholder="پیام خود را بنویسید..."
+            className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring resize-none h-12"
+            aria-label="Message input"
           />
           <button
             onClick={send}
             disabled={sendMutation.isLoading}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            aria-label="send message"
           >
-            Send
+            ارسال
           </button>
         </div>
       </div>

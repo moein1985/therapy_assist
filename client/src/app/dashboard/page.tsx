@@ -1,12 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
-import { trpc } from '@/utils/trpc';
-import type { MoodLog } from '@backend/domain/entities/MoodLog';
-
-'use client';
-import React from 'react';
 import { trpc } from '@/utils/trpc';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -50,7 +44,7 @@ export default function DashboardPage() {
             <span>Recent Moods</span>
           </h3>
           <ul className="space-y-4">
-            {moods?.map((m) => (
+            {moods?.map((m: any) => (
               <li key={m.id} className="flex justify-between items-center bg-gray-700/30 p-4 rounded-xl hover:bg-gray-700/50 transition-colors">
                 <span className="font-medium text-lg text-gray-200">{m.mood}</span>
                 <span className="text-sm text-gray-500">{new Date(m.createdAt).toLocaleString()}</span>
