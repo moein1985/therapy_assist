@@ -10,14 +10,71 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  THERAPIST
+  PATIENT
+}
+
+enum SenderType {
+  USER
+  AI
+  SYSTEM
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 model User {
-  id    String @id @default(cuid())
-  email String @unique
-  name  String?
-  password String
-  moodLogs MoodLog[]
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  role          Role      @default(PATIENT)
+  metadata      Json?
+  therapistId   String?
+  therapist     User?     @relation("TherapistPatients", fields: [therapistId], references: [id])
+  patients      User[]    @relation("TherapistPatients")
+  conversations Conversation[]
+  tokenLogs     TokenLog[]
+  moodLogs      MoodLog[]
   journalEntries JournalEntry[]
-  chatMessages ChatMessage[]
+}
+
+model Conversation {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id])
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  summary   String?            @db.Text
+  status    ConversationStatus @default(ACTIVE)
+  messages  ChatMessage[]
+  tokenLogs TokenLog[]
+}
+
+model ChatMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  text           String       @db.Text
+  sender         SenderType
+  tokenUsage     Json?
+  createdAt      DateTime     @default(now())
+}
+
+model TokenLog {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  conversationId   String?
+  conversation     Conversation? @relation(fields: [conversationId], references: [id])
+  promptTokens     Int?
+  completionTokens Int?
+  modelName        String
+  createdAt        DateTime      @default(now())
 }
 
 model MoodLog {
@@ -32,15 +89,6 @@ model JournalEntry {
   id        String   @id @default(cuid())
   title     String
   content   String
-  createdAt DateTime @default(now())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-}
-
-model ChatMessage {
-  id        String   @id @default(cuid())
-  text      String
-  sender    String // "USER" or "AI"
   createdAt DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [id])

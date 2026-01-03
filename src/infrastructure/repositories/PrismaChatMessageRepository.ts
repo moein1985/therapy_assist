@@ -1,44 +1,38 @@
 // src/infrastructure/repositories/PrismaChatMessageRepository.ts
 
-import { PrismaClient } from '@prisma/client';
-import type { ChatMessage as PrismaChatMessage } from '@prisma/client';
-import { ChatMessage } from '../../domain/entities/ChatMessage';
-import { ChatMessageRepository } from '../../domain/repositories/ChatMessageRepository';
+import { PrismaClient, SenderType, Conversation, ChatMessage } from '@prisma/client';
 
-export class PrismaChatMessageRepository implements ChatMessageRepository {
+export class PrismaChatMessageRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async save(chatMessage: ChatMessage): Promise<ChatMessage> {
-    const createdChatMessage = await this.prisma.chatMessage.create({
-      data: {
-        id: chatMessage.id,
-        userId: chatMessage.userId,
-        text: chatMessage.text,
-        sender: chatMessage.sender,
-        createdAt: chatMessage.createdAt,
-      },
+export class PrismaChatMessageRepository {
+  constructor(private prisma: PrismaClient) {}
+
+  // Find or Create Active Conversation
+  async findOrCreateActiveConversation(userId: string): Promise<Conversation> {
+    let conversation = await this.prisma.conversation.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      orderBy: { updatedAt: 'desc' }
     });
-    // map to domain ChatMessage with proper sender union type
-    return {
-      id: createdChatMessage.id,
-      userId: createdChatMessage.userId,
-      text: createdChatMessage.text,
-      sender: createdChatMessage.sender as 'USER' | 'AI',
-      createdAt: createdChatMessage.createdAt,
-    };
+
+    if (!conversation) {
+      conversation = await this.prisma.conversation.create({
+        data: { userId, status: 'ACTIVE' }
+      });
+    }
+    return conversation;
   }
 
+  async save(data: { conversationId: string; text: string; sender: SenderType; tokenUsage?: any }) {
+    return this.prisma.chatMessage.create({ data });
+  }
+
+  // Find messages for the current active conversation context
   async findByUserId(userId: string): Promise<ChatMessage[]> {
-    const chatMessages = await this.prisma.chatMessage.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'asc' },
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      include: { messages: { orderBy: { createdAt: 'asc' } } }
     });
-    return chatMessages.map((m: PrismaChatMessage) => ({
-      id: m.id,
-      userId: m.userId,
-      text: m.text,
-      sender: m.sender as 'USER' | 'AI',
-      createdAt: m.createdAt,
-    }));
+    return conversation?.messages || [];
   }
 }
