@@ -1074,6 +1074,168 @@ run();
 
 ---
 
+## Temporary test scripts (included for review)
+
+> Note: These were used as quick, temporary tests during development. The `test-avalai` script was removed from the repo after execution; its code is included here for auditability.
+
+### src/scripts/test-avalai.ts
+
+```ts
+import dotenv from 'dotenv';
+dotenv.config();
+
+const API_BASE = 'https://api.avalai.ir/v1';
+
+async function listModels(apiKey: string) {
+  const url = `${API_BASE}/models`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`List models failed: ${res.status} ${res.statusText} ${txt}`);
+  }
+
+  const data: any = await res.json();
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.models)) return data.models;
+  return data;
+}
+
+async function askModel(apiKey: string, model: string, prompt: string) {
+  const url = `${API_BASE}/chat/completions`;
+  const body = { model, messages: [{ role: 'user', content: prompt }], };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`Chat request failed: ${res.status} ${res.statusText} ${txt}`);
+  }
+
+  const data: any = await res.json();
+  const content = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || data?.data?.[0]?.message?.content;
+  return { raw: data, content };
+}
+
+async function run() {
+  try {
+    const key = process.env.AVALAI_API_KEY || 'aa-9SKXcAXZRCJ5MmyvgcBrxKHSV6m5m7WeHnEXiCSX69ZzK4Ls';
+
+    console.log('Listing available models from AvalAI...');
+    const models = await listModels(key);
+    console.log('Models result (truncated):', JSON.stringify(models).slice(0, 1000));
+
+    const modelToUse = 'gemini-2.5-pro';
+    console.log(`\nAsking model ${modelToUse} a Persian question...`);
+    const prompt = 'شما میتونید در ضمینه ی تراپی چه کمکی به تراپیست ارائه دهید؟';
+    const resp = await askModel(key, modelToUse, prompt);
+
+    console.log('\n=== AI Response content ===');
+    console.log(resp.content || '(no content returned)');
+    console.log('\n=== Full raw response (truncated) ===');
+    console.log(JSON.stringify(resp.raw).slice(0, 2000));
+  } catch (err: any) {
+    console.error('Error during test-avalai:', err.message || err);
+    process.exitCode = 1;
+  }
+}
+
+if (require.main === module) {
+  run();
+}
+```
+
+### Playwright E2E (added during testing)
+
+```ts
+// playwright.config.ts (excerpt)
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: 'tests/e2e',
+  use: { baseURL: 'http://localhost:3000' },
+  webServer: { command: 'pnpm -C client dev', port: 3000, reuseExistingServer: true },
+});
+```
+
+```ts
+// tests/e2e/login-and-chat.spec.ts (excerpt)
+import { test, expect } from '@playwright/test';
+
+test('login demo and chat flow', async ({ page }) => {
+  await page.goto('/login');
+  await page.click('button[aria-label="demo-signin"]');
+  await page.waitForURL('/dashboard', { timeout: 15000 });
+  await page.goto('/chat');
+  const messageSelector = 'div[class*="max-w-"]';
+  const prevCount = await page.locator(messageSelector).count();
+  await page.fill('input[placeholder="Write a message..."]', 'Playwright E2E test message');
+  await page.click('button:has-text("Send")');
+
+  const trpcResp = await page.waitForResponse((res) => res.url().includes('/trpc') && res.request().method() === 'POST', { timeout: 120_000 });
+  const respBody = await trpcResp.json();
+  const aiText = (respBody?.[0]?.result?.data?.text as string) || '';
+  const snippet = aiText.slice(0, 60).trim();
+  await page.waitForSelector(`text=${snippet}`, { timeout: 120_000 });
+});
+```
+
+---
+
+## AvalAI test run (2026-01-03)
+
+- Purpose: quick verification that AvalAI API (https://api.avalai.ir) is reachable with the provided key and that `gemini-2.5-pro` returns a Persian response.
+- Command run (temporary script): `pnpm exec ts-node src/scripts/test-avalai.ts` (script used a fallback key if `AVALAI_API_KEY` wasn't set).
+
+### Models list (truncated)
+
+```json
+[{"id":"glm-4.7","object":"model","owned_by":"zai",...},{"id":"gemini-3-flash-preview","object":"model","owned_by":"google",...},{"id":"gemini-2.5-pro","object":"model","owned_by":"google",...}]
+```
+
+### Query & response
+
+- Query (Persian):
+
+  "شما میتونید در ضمینه ی تراپی چه کمکی به تراپیست ارائه دهید؟"
+
+- AI response (excerpt):
+
+```text
+عالی! این سوال بسیار مهمی است. من به عنوان یک هوش مصنوعی می‌توانم یک دستیار قدرتمند و چندمنظوره برای یک درمانگر باشم، اما بسیار مهم است که تاکید کنم هرگز جایگزین تخصص، قضاوت بالینی و ارتباط انسانی درمانگر نیستم.
+
+نقش من حمایت از درمانگر است تا زمان و انرژی او برای تمرکز بر روی مراجع آزاد شود. در اینجا زمینه‌هایی که می‌توانم کمک کنم را به تفکیک شرح می‌دهم: ...
+```
+
+- Raw response (truncated):
+
+```json
+{"id":"lx9ZaZ7hI6eunsEPp7u3sQo","created":1767448442,"model":"gemini-2.5-pro","choices":[{"index":0,"message":{"content":"عالی! این سوال بسیار مهمی است..."},"finish_reason":"stop"}]}
+```
+
+> Note: This was a real API call and consumed AvalAI quota for the provided key.
+
+---
+
+## Smoke test result
+
+- The smoke test was executed locally using `npm run test:flow`.
+- Result: user was registered, login succeeded, mood logged. The AI step was skipped because `AVALAI_API_KEY` was not set.
+
+
+---
+
 ## Smoke test result
 
 - The smoke test was executed locally using `npm run test:flow`.
